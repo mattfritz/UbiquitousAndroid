@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
      Copyright (C) 2015 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
@@ -226,4 +225,7 @@
     <string name="gcm_weather_alert">Heads up: %1$s in %2$s!</string>
     // TODO: Get the SenderID from the Developer Console
     <string name="gcm_defaultSenderId" translatable="false"></string>
+    <string name="title_activity_main_wear">MainWearActivity</string>
+    <string name="hello_round">Hello Round World!</string>
+    <string name="hello_square">Hello Square World!</string>
 </resources>

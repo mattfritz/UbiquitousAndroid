@@ -7,7 +7,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.android.sunshine.app"
-        minSdkVersion 10
+        minSdkVersion 20
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
@@ -30,6 +30,8 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.github.bumptech.glide:glide:3.5.2'
+    compile "com.google.android.support:wearable:+"
+    compile 'com.android.support:support-v4:23.1.1'
     compile 'com.android.support:support-annotations:23.1.1'
     compile 'com.android.support:gridlayout-v7:23.1.1'
     compile 'com.android.support:cardview-v7:23.1.1'
