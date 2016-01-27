@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.android.sunshine.app.MainWearActivity"
+    tools:context="com.mattfritz.wearable.MainActivity"
     tools:deviceIds="wear_round"
     android:background="@color/primary"
     android:orientation="vertical" >
@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="6dp"
             android:layout_gravity="center_vertical"
-            android:src="@drawable/ic_clear" />
+            android:src="@drawable/ic_full_cancel" />
 
         <TextView
             android:id="@+id/wear_hi_temp"
