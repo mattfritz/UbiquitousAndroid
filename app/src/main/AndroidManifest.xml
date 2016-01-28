@@ -180,7 +180,6 @@
         <service
             android:name=".gcm.RegistrationIntentService"
             android:exported="false" />
-
     </application>
 
 </manifest>
