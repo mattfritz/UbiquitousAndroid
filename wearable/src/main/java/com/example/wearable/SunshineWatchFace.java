@@ -21,6 +21,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -34,8 +36,10 @@ import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
+import android.widget.ImageView;
 
 import java.lang.ref.WeakReference;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -90,6 +94,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         Paint mTextPaint;
         boolean mAmbient;
         Time mTime;
+        ImageView mWeatherImage;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -119,10 +124,10 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             mYOffset = resources.getDimension(R.dimen.digital_y_offset);
 
             mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(resources.getColor(R.color.background));
+            mBackgroundPaint.setColor(resources.getColor(R.color.primary));
 
             mTextPaint = new Paint();
-            mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
+            mTextPaint = createTextPaint(resources.getColor(R.color.white));
 
             mTime = new Time();
         }
@@ -143,6 +148,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
         @Override
         public void onVisibilityChanged(boolean visible) {
+            // TODO: use this to update weather when visible
             super.onVisibilityChanged(visible);
 
             if (visible) {
@@ -229,12 +235,31 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
             }
 
-            // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
+            // TODO: query for image and hi/lo temps
+            //
+            // TODO: change this image when a different resource id is returned, need helper method
+            // Weather icon
+            Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.art_clear);
+            // TODO: position weather icon tastefully
+            Rect src = new Rect(0, 0, icon.getWidth(), icon.getHeight());
+            Rect dest = new Rect(0, 0, bounds.width(), bounds.height());
+            canvas.drawBitmap(icon, src, dest, null);
+
+            // Current Time
             mTime.setToNow();
-            String text = mAmbient
-                    ? String.format("%d:%02d", mTime.hour, mTime.minute)
-                    : String.format("%d:%02d:%02d", mTime.hour, mTime.minute, mTime.second);
+            String text = String.format(Locale.getDefault(), "%d:%02d", mTime.hour, mTime.minute);
             canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
+
+            // TODO: Lo temp
+            // Rect loSrc = new Rect(left, top, right, bottom);
+            // Rect loDest = new Rect(left, top, right, bottom);
+            // String loTemp = getLoTempFromProvider() + "U+00B0";
+            // canvas.drawText(loTemp, loSrc, loDest, mTextPaint);
+            // TODO: Hi temp
+            // Rect hiSrc = new Rect(left, top, right, bottom);
+            // Rect hiDest = new Rect(left, top, right, bottom);
+            // String hiTemp = getHiTempFromProvider() + "U+00B0";
+            // canvas.drawText(hiTemp, hiSrc, hiDest, mTextPaint);
         }
 
         /**
