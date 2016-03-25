@@ -37,6 +37,8 @@
 
     <uses-permission android:name="com.example.android.sunshine.app.permission.C2D_MESSAGE" />
 
+    <permission android:name="com.example.android.sunshine.app.READ_DATA" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -75,8 +77,11 @@
         <provider
             android:name=".data.WeatherProvider"
             android:authorities="@string/content_authority"
-            android:exported="false"
-            android:syncable="true" />
+            android:enabled="true"
+            android:exported="true"
+            android:syncable="true"
+            android:readPermission="com.example.android.sunshine.app.READ_DATA"
+            android:grantUriPermissions="true" />
 
         <!-- SyncAdapter's dummy authentication service -->
         <service android:name=".sync.SunshineAuthenticatorService">

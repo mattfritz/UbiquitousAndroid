@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -28,17 +29,21 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 import android.widget.ImageView;
 
 import java.lang.ref.WeakReference;
+import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +53,7 @@ import java.util.concurrent.TimeUnit;
  * low-bit ambient mode, the text is drawn without anti-aliasing in ambient mode.
  */
 public class SunshineWatchFace extends CanvasWatchFaceService {
+    private static final String LOG_TAG = SunshineWatchFace.class.getSimpleName();
     private static final Typeface NORMAL_TYPEFACE =
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
 
@@ -61,6 +67,8 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
      * Handler message id for updating the time periodically in interactive mode.
      */
     private static final int MSG_UPDATE_TIME = 0;
+    private static final int MSG_LOAD_WEATHER = 1;
+    private AsyncTask<Void, Void, Integer> mLoadWeatherTask;
 
     @Override
     public Engine onCreateEngine() {
@@ -152,12 +160,14 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             super.onVisibilityChanged(visible);
 
             if (visible) {
+                mLoadWeatherHandler.sendEmptyMessage(MSG_LOAD_WEATHER);
                 registerReceiver();
 
                 // Update time zone in case it changed while we weren't visible.
                 mTime.clear(TimeZone.getDefault().getID());
                 mTime.setToNow();
             } else {
+                cancelLoadWeatherTask();
                 unregisterReceiver();
             }
 
@@ -291,6 +301,60 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 long delayMs = INTERACTIVE_UPDATE_RATE_MS
                         - (timeMs % INTERACTIVE_UPDATE_RATE_MS);
                 mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
+            }
+        }
+
+        public AsyncTask<Void, Void, Integer> mLoadWeatherTask;
+        public class LoadWeatherTask extends AsyncTask<Void, Void, Integer> {
+            @Override
+            protected Integer doInBackground(Void... params) {
+                Long normalizedDate = normalizeDate(new Date().getTime());
+                Uri contentUri = Uri.parse("content://com.example.android.sunshine.app/weather")
+                    .buildUpon()
+                    .appendPath("80120")
+                    .appendQueryParameter("date", Long.toString(normalizedDate))
+                    .build();
+
+                Log.e(LOG_TAG, contentUri.toString());
+
+                Cursor cursor = getContentResolver().query(contentUri, null, null, null, null);
+                try {
+                    Log.v(LOG_TAG, "QUERY COUNT: " + cursor.getCount());
+                } catch (Exception e) {
+                    Log.e(LOG_TAG, e.toString());
+                } finally {
+                    if (cursor != null)
+                        cursor.close();
+                }
+                return null;
+            }
+
+            private long normalizeDate(long startDate) {
+                Time time = new Time();
+                time.set(startDate);
+                int julianDay = Time.getJulianDay(startDate, time.gmtoff);
+                return time.setJulianDay(julianDay);
+            }
+        }
+
+
+        /* Handler to load the meetings once a minute in interactive mode. */
+        final Handler mLoadWeatherHandler = new Handler() {
+            @Override
+            public void handleMessage(Message message) {
+                switch (message.what) {
+                    case MSG_LOAD_WEATHER:
+                        cancelLoadWeatherTask();
+                        mLoadWeatherTask = new LoadWeatherTask();
+                        mLoadWeatherTask.execute();
+                        break;
+                }
+            }
+        };
+
+        private void cancelLoadWeatherTask() {
+            if (mLoadWeatherTask != null) {
+                mLoadWeatherTask.cancel(true);
             }
         }
     }
