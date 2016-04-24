@@ -138,7 +138,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
         private GoogleApiClient mGoogleApiClient;
 
-        private void connectGoogleApi() {
+        private void createGoogleApiClient() {
             if (mGoogleApiClient == null) {
                 mGoogleApiClient = new GoogleApiClient.Builder(SunshineWatchFace.this)
                         .addConnectionCallbacks(this)
@@ -146,8 +146,22 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                         .addApi(Wearable.API)
                         .build();
             }
+        }
+
+        private void connectGoogleApi() {
             if (!mGoogleApiClient.isConnected()) {
                 mGoogleApiClient.connect();
+            } else {
+                Log.i(LOG_TAG, "Google API Client already connected");
+            }
+        }
+
+        private void disconnectGoogleApi() {
+            Wearable.DataApi.removeListener(mGoogleApiClient, this);
+            if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+                mGoogleApiClient.disconnect();
+            } else {
+                Log.i(LOG_TAG, "Google API Client already disconnected");
             }
         }
 
@@ -218,7 +232,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
-            connectGoogleApi();
+            createGoogleApiClient();
 
             setWatchFaceStyle(new WatchFaceStyle.Builder(SunshineWatchFace.this)
                     .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
@@ -240,9 +254,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         @Override
         public void onDestroy() {
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
-            if (mGoogleApiClient.isConnected()) {
-                mGoogleApiClient.disconnect();
-            }
+            disconnectGoogleApi();
             super.onDestroy();
         }
 
@@ -260,12 +272,14 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             super.onVisibilityChanged(visible);
 
             if (visible) {
+                connectGoogleApi();
                 registerReceiver();
 
                 // Update time zone in case it changed while we weren't visible.
                 mTime.clear(TimeZone.getDefault().getID());
                 mTime.setToNow();
             } else {
+                disconnectGoogleApi();
                 unregisterReceiver();
             }
 
