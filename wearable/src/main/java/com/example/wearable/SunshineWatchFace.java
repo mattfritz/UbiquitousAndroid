@@ -186,6 +186,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                     .authority(deviceAuthority)
                     .build();
 
+            Log.d(LOG_TAG, "URI: " + uri.toString());
             Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
                     .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
                         @Override
@@ -195,8 +196,8 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                             if (dataItemResult.getStatus().isSuccess() && dataItemResult.getDataItem() != null) {
                                 DataMap data = DataMap.fromByteArray(dataItemResult.getDataItem().getData());
                                 int weatherId = data.getInt(WEATHER_KEY);
-                                double hiTemp = data.getDouble(HITEMP_KEY);
-                                double lowTemp = data.getDouble(LOTEMP_KEY);
+                                String hiTemp = data.getString(HITEMP_KEY);
+                                String lowTemp = data.getString(LOTEMP_KEY);
                                 Log.d(LOG_TAG, "WID: " + weatherId + " HITEMP: " + hiTemp);
                             }
                         }
@@ -205,7 +206,8 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
         @Override
         public void onDataChanged(DataEventBuffer dataEventBuffer) {
-            Log.d(LOG_TAG, "CHANGED DATA INCOMING");
+            Log.d(LOG_TAG, "DATA CHANGED");
+            getUpdates();
         }
 
         @Override

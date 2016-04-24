@@ -413,15 +413,18 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
         if (cursor.moveToFirst()) {
             int weatherId = cursor.getInt(INDEX_WEATHER_ID);
-            double high = cursor.getDouble(INDEX_MAX_TEMP);
-            double low = cursor.getDouble(INDEX_MIN_TEMP);
+            Log.d(LOG_TAG, "WEATHER_ID: " + Integer.toString(weatherId));
+            String high = Utility.formatTemperature(context, cursor.getDouble(INDEX_MAX_TEMP));
+            Log.d(LOG_TAG, "HITEMP: " + high);
+            String low = Utility.formatTemperature(context, cursor.getDouble(INDEX_MIN_TEMP));
+            Log.d(LOG_TAG, "LOTEMP: " + low);
 
             PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/sunshine-wear");
             DataMap dataMap = putDataMapRequest.getDataMap();
 
             dataMap.putInt(WEATHER_KEY, weatherId);
-            dataMap.putDouble(HITEMP_KEY, high);
-            dataMap.putDouble(LOTEMP_KEY, low);
+            dataMap.putString(HITEMP_KEY, high);
+            dataMap.putString(LOTEMP_KEY, low);
             putDataMapRequest.setUrgent();
 
             Log.d(LOG_TAG, "Sending data item to wearable");
