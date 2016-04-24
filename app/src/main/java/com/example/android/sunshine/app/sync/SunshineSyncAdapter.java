@@ -40,7 +40,10 @@ import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.muzei.WeatherMuzeiSource;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.Wearable;
 
@@ -413,15 +416,30 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
             double high = cursor.getDouble(INDEX_MAX_TEMP);
             double low = cursor.getDouble(INDEX_MIN_TEMP);
 
-            PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/sunshine_wear");
+            PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/sunshine-wear");
             DataMap dataMap = putDataMapRequest.getDataMap();
 
             dataMap.putInt(WEATHER_KEY, weatherId);
             dataMap.putDouble(HITEMP_KEY, high);
             dataMap.putDouble(LOTEMP_KEY, low);
+            putDataMapRequest.setUrgent();
 
             Log.d(LOG_TAG, "Sending data item to wearable");
-            Wearable.DataApi.putDataItem(mGoogleApiClient, putDataMapRequest.asPutDataRequest());
+            Wearable.DataApi.putDataItem(mGoogleApiClient, putDataMapRequest.asPutDataRequest())
+                    .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
+                        @Override
+                        public void onResult(@NonNull DataApi.DataItemResult dataItemResult) {
+                            if (dataItemResult.getStatus().isSuccess()) {
+                                Log.d(LOG_TAG, "Data sync successful");
+                            } else {
+                                Log.e(LOG_TAG, "Data sync failed");
+                            }
+                        }
+                    });
+
+            // Debug to make sure wearable is connected
+            NodeApi.GetConnectedNodesResult res = Wearable.NodeApi.getConnectedNodes(mGoogleApiClient).await();
+            Log.d(LOG_TAG, "Connected Nodes: " + res.getNodes().toString());
         }
         cursor.close();
     }
