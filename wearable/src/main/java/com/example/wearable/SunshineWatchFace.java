@@ -110,7 +110,9 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         }
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine implements DataApi.DataListener {
+    private class Engine extends CanvasWatchFaceService.Engine
+            implements GoogleApiClient.ConnectionCallbacks,
+                GoogleApiClient.OnConnectionFailedListener, DataApi.DataListener {
         final Handler mUpdateTimeHandler = new EngineHandler(this);
         boolean mRegisteredTimeZoneReceiver = false;
         Paint mBackgroundPaint;
@@ -139,30 +141,31 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         private void connectGoogleApi() {
             if (mGoogleApiClient == null) {
                 mGoogleApiClient = new GoogleApiClient.Builder(SunshineWatchFace.this)
-                        .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-                            @Override
-                            public void onConnected(@Nullable Bundle bundle) {
-                                Log.d(LOG_TAG, "Connected to Google services");
-                                getUpdates();
-                            }
-
-                            @Override
-                            public void onConnectionSuspended(int i) {
-                                Log.d(LOG_TAG, "Connection to Google services suspended with reason: " + Integer.toString(i));
-                            }
-                        })
-                        .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
-                            @Override
-                            public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-                                Log.e(LOG_TAG, "Connection to Google Services failed: " + connectionResult.toString());
-                            }
-                        })
+                        .addConnectionCallbacks(this)
+                        .addOnConnectionFailedListener(this)
                         .addApi(Wearable.API)
                         .build();
             }
             if (!mGoogleApiClient.isConnected()) {
                 mGoogleApiClient.connect();
             }
+        }
+
+        @Override
+        public void onConnected(@Nullable Bundle bundle) {
+            Log.d(LOG_TAG, "Connected to Google services");
+            Wearable.DataApi.addListener(mGoogleApiClient, this);
+            getUpdates();
+        }
+
+        @Override
+        public void onConnectionSuspended(int i) {
+            Log.d(LOG_TAG, "Connection to Google services suspended with reason: " + Integer.toString(i));
+        }
+
+        @Override
+        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+            Log.e(LOG_TAG, "Connection to Google Services failed: " + connectionResult.toString());
         }
 
         private void getUpdates() {
