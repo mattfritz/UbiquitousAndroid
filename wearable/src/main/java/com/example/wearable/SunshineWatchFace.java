@@ -28,15 +28,30 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 import android.widget.ImageView;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
+import com.google.android.gms.wearable.PutDataRequest;
+import com.google.android.gms.wearable.Wearable;
 
 import java.lang.ref.WeakReference;
 import java.util.Locale;
@@ -48,6 +63,11 @@ import java.util.concurrent.TimeUnit;
  * low-bit ambient mode, the text is drawn without anti-aliasing in ambient mode.
  */
 public class SunshineWatchFace extends CanvasWatchFaceService {
+    public final String LOG_TAG = this.getClass().getSimpleName();
+    private final String WEATHER_KEY = "com.example.sunshine.app.weather";
+    private final String HITEMP_KEY = "com.example.sunshine.app.hitemp";
+    private final String LOTEMP_KEY = "com.example.sunshine.app.lotemp";
+
     private static final Typeface NORMAL_TYPEFACE =
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
 
@@ -87,7 +107,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         }
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine {
+    private class Engine extends CanvasWatchFaceService.Engine implements DataApi.DataListener {
         final Handler mUpdateTimeHandler = new EngineHandler(this);
         boolean mRegisteredTimeZoneReceiver = false;
         Paint mBackgroundPaint;
@@ -111,9 +131,88 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
          */
         boolean mLowBitAmbient;
 
+        private String handheldId;
+
+        private GoogleApiClient mGoogleApiClient;
+
+        private void connectGoogleApi() {
+            if (mGoogleApiClient == null) {
+                mGoogleApiClient = new GoogleApiClient.Builder(SunshineWatchFace.this)
+                        .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+                            @Override
+                            public void onConnected(@Nullable Bundle bundle) {
+                                Log.d(LOG_TAG, "Connected to Google services");
+                                getUpdates();
+                            }
+
+                            @Override
+                            public void onConnectionSuspended(int i) {
+                                Log.d(LOG_TAG, "Connection to Google services suspended with reason: " + Integer.toString(i));
+                            }
+                        })
+                        .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
+                            @Override
+                            public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+                                Log.e(LOG_TAG, "Connection to Google Services failed: " + connectionResult.toString());
+                            }
+                        })
+                        .addApi(Wearable.API)
+                        .build();
+            }
+            if (!mGoogleApiClient.isConnected()) {
+                mGoogleApiClient.connect();
+            }
+        }
+
+        private void getUpdates() {
+            Wearable.NodeApi.getConnectedNodes(mGoogleApiClient)
+                    .setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
+                        @Override
+                        public void onResult(@NonNull NodeApi.GetConnectedNodesResult getConnectedNodesResult) {
+                            String deviceAuthority = "";
+                            for (Node node : getConnectedNodesResult.getNodes()) {
+                                Log.d(LOG_TAG, "NODE: " + node.getId());
+                                deviceAuthority = node.getId();
+                            }
+                            fetchWeatherUpdates(deviceAuthority);
+                        }
+                    });
+        }
+
+        private void fetchWeatherUpdates(String deviceAuthority) {
+            Uri uri = new Uri.Builder()
+                    .scheme(PutDataRequest.WEAR_URI_SCHEME)
+                    .path("/sunshine-wear")
+                    .authority(deviceAuthority)
+                    .build();
+
+            Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
+                    .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
+                        @Override
+                        public void onResult(@NonNull DataApi.DataItemResult dataItemResult) {
+                            Log.d(LOG_TAG, "DATA REQ SUCCESS: " + dataItemResult.getStatus().isSuccess());
+                            Log.d(LOG_TAG, "DATA REQ RESULT: " + dataItemResult.getDataItem());
+                            if (dataItemResult.getStatus().isSuccess() && dataItemResult.getDataItem() != null) {
+                                DataMap data = DataMap.fromByteArray(dataItemResult.getDataItem().getData());
+                                int weatherId = data.getInt(WEATHER_KEY);
+                                double hiTemp = data.getDouble(HITEMP_KEY);
+                                double lowTemp = data.getDouble(LOTEMP_KEY);
+                                Log.d(LOG_TAG, "WID: " + weatherId + " HITEMP: " + hiTemp);
+                            }
+                        }
+                    });
+        }
+
+        @Override
+        public void onDataChanged(DataEventBuffer dataEventBuffer) {
+            Log.d(LOG_TAG, "CHANGED DATA INCOMING");
+        }
+
         @Override
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
+
+            connectGoogleApi();
 
             setWatchFaceStyle(new WatchFaceStyle.Builder(SunshineWatchFace.this)
                     .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
