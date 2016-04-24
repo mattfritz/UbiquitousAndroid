@@ -425,6 +425,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
             dataMap.putInt(WEATHER_KEY, weatherId);
             dataMap.putString(HITEMP_KEY, high);
             dataMap.putString(LOTEMP_KEY, low);
+            dataMap.putLong("TIMESTAMP", System.currentTimeMillis());
             putDataMapRequest.setUrgent();
 
             Log.d(LOG_TAG, "Sending data item to wearable");

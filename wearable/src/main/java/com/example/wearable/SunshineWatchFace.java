@@ -67,6 +67,9 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
     private final String WEATHER_KEY = "com.example.sunshine.app.weather";
     private final String HITEMP_KEY = "com.example.sunshine.app.hitemp";
     private final String LOTEMP_KEY = "com.example.sunshine.app.lotemp";
+    private int mWeatherId;
+    private String mHighTemp;
+    private String mLowTemp;
 
     private static final Typeface NORMAL_TYPEFACE =
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
@@ -131,8 +134,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
          */
         boolean mLowBitAmbient;
 
-        private String handheldId;
-
         private GoogleApiClient mGoogleApiClient;
 
         private void connectGoogleApi() {
@@ -195,10 +196,10 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                             Log.d(LOG_TAG, "DATA REQ RESULT: " + dataItemResult.getDataItem());
                             if (dataItemResult.getStatus().isSuccess() && dataItemResult.getDataItem() != null) {
                                 DataMap data = DataMap.fromByteArray(dataItemResult.getDataItem().getData());
-                                int weatherId = data.getInt(WEATHER_KEY);
-                                String hiTemp = data.getString(HITEMP_KEY);
-                                String lowTemp = data.getString(LOTEMP_KEY);
-                                Log.d(LOG_TAG, "WID: " + weatherId + " HITEMP: " + hiTemp);
+                                mWeatherId = data.getInt(WEATHER_KEY);
+                                mHighTemp = data.getString(HITEMP_KEY);
+                                mLowTemp = data.getString(LOTEMP_KEY);
+                                Log.d(LOG_TAG, "WID: " + mWeatherId + " HITEMP: " + mHighTemp + " LOWTEMP: " + mLowTemp);
                             }
                         }
                     });
@@ -236,6 +237,9 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         @Override
         public void onDestroy() {
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
+            if (mGoogleApiClient.isConnected()) {
+                mGoogleApiClient.disconnect();
+            }
             super.onDestroy();
         }
 
@@ -336,8 +340,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
             }
 
-            // TODO: query for image and hi/lo temps
-            //
             // TODO: change this image when a different resource id is returned, need helper method
             // Weather icon
             Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.art_clear);
@@ -351,16 +353,28 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             String text = String.format(Locale.getDefault(), "%d:%02d", mTime.hour, mTime.minute);
             canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
 
-            // TODO: Lo temp
-            // Rect loSrc = new Rect(left, top, right, bottom);
-            // Rect loDest = new Rect(left, top, right, bottom);
-            // String loTemp = getLoTempFromProvider() + "U+00B0";
-            // canvas.drawText(loTemp, loSrc, loDest, mTextPaint);
-            // TODO: Hi temp
-            // Rect hiSrc = new Rect(left, top, right, bottom);
-            // Rect hiDest = new Rect(left, top, right, bottom);
-            // String hiTemp = getHiTempFromProvider() + "U+00B0";
-            // canvas.drawText(hiTemp, hiSrc, hiDest, mTextPaint);
+            // TODO: Put offset vars in dimensions xml
+            String loTemp = getLowTemp();
+            canvas.drawText(loTemp, 0, 10, mTextPaint);
+            // TODO: Put offset vars in dimensions xml
+            String hiTemp = getHighTemp();
+            canvas.drawText(hiTemp, 5, 15, mTextPaint);
+        }
+
+        private String getLowTemp() {
+            if (mLowTemp != null) {
+                return mLowTemp;
+            } else {
+                return "";
+            }
+        }
+
+        private String getHighTemp() {
+            if (mHighTemp != null) {
+                return mHighTemp;
+            } else {
+                return "";
+            }
         }
 
         /**
