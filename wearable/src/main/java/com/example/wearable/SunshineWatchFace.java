@@ -68,6 +68,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
     private final String HITEMP_KEY = "com.example.sunshine.app.hitemp";
     private final String LOTEMP_KEY = "com.example.sunshine.app.lotemp";
     private int mWeatherId;
+    private int mWeatherImageResourceId;
     private String mHighTemp;
     private String mLowTemp;
 
@@ -219,6 +220,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                                 mWeatherId = data.getInt(WEATHER_KEY);
                                 mHighTemp = data.getString(HITEMP_KEY);
                                 mLowTemp = data.getString(LOTEMP_KEY);
+                                mWeatherImageResourceId = getIconResourceForWeatherCondition(mWeatherId);
                                 Log.d(LOG_TAG, "WID: " + mWeatherId + " HITEMP: " + mHighTemp + " LOWTEMP: " + mLowTemp);
                             }
                         }
@@ -363,12 +365,13 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             } else {
                 canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
 
-                // TODO: change this image when a different resource id is returned, need helper method
                 // Weather icon
-                Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.art_clear);
-                Rect src = new Rect(0, 0, icon.getWidth(), icon.getHeight());
-                Rect dest = new Rect(0, 0, bounds.width(), bounds.height());
-                canvas.drawBitmap(icon, src, dest, null);
+                Bitmap icon = BitmapFactory.decodeResource(getResources(), mWeatherImageResourceId);
+                if (icon != null) {
+                    Rect src = new Rect(0, 0, icon.getWidth(), icon.getHeight());
+                    Rect dest = new Rect(0, 0, bounds.width(), bounds.height());
+                    canvas.drawBitmap(icon, src, dest, null);
+                }
             }
 
             // Current Time
@@ -429,6 +432,35 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                         - (timeMs % INTERACTIVE_UPDATE_RATE_MS);
                 mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
             }
+        }
+
+        public int getIconResourceForWeatherCondition(int weatherId) {
+            // Based on weather code data found at:
+            // http://bugs.openweathermap.org/projects/api/wiki/Weather_Condition_Codes
+            if (weatherId >= 200 && weatherId <= 232) {
+                return R.drawable.ic_storm;
+            } else if (weatherId >= 300 && weatherId <= 321) {
+                return R.drawable.ic_light_rain;
+            } else if (weatherId >= 500 && weatherId <= 504) {
+                return R.drawable.ic_rain;
+            } else if (weatherId == 511) {
+                return R.drawable.ic_snow;
+            } else if (weatherId >= 520 && weatherId <= 531) {
+                return R.drawable.ic_rain;
+            } else if (weatherId >= 600 && weatherId <= 622) {
+                return R.drawable.ic_snow;
+            } else if (weatherId >= 701 && weatherId <= 761) {
+                return R.drawable.ic_fog;
+            } else if (weatherId == 761 || weatherId == 781) {
+                return R.drawable.ic_storm;
+            } else if (weatherId == 800) {
+                return R.drawable.ic_clear;
+            } else if (weatherId == 801) {
+                return R.drawable.ic_light_clouds;
+            } else if (weatherId >= 802 && weatherId <= 804) {
+                return R.drawable.ic_cloudy;
+            }
+            return -1;
         }
     }
 }
