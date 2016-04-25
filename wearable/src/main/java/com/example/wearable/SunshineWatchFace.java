@@ -129,6 +129,9 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         };
         float mXOffset;
         float mYOffset;
+        float mTempYOffset;
+        float mHiTempXOffset;
+        float mLoTempXOffset;
 
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
@@ -316,6 +319,10 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                     ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
             float textSize = resources.getDimension(isRound
                     ? R.dimen.digital_text_size_round : R.dimen.digital_text_size);
+            mTempYOffset = resources.getDimension(R.dimen.temp_y_offset);
+            float tempXOffset = resources.getDimension(R.dimen.temp_x_offset);
+            mLoTempXOffset = tempXOffset - 50;
+            mHiTempXOffset = tempXOffset + 50;
 
             mTextPaint.setTextSize(textSize);
         }
@@ -355,27 +362,25 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 canvas.drawColor(Color.BLACK);
             } else {
                 canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
-            }
 
-            // TODO: change this image when a different resource id is returned, need helper method
-            // Weather icon
-            Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.art_clear);
-            // TODO: position weather icon tastefully
-            Rect src = new Rect(0, 0, icon.getWidth(), icon.getHeight());
-            Rect dest = new Rect(0, 0, bounds.width(), bounds.height());
-            canvas.drawBitmap(icon, src, dest, null);
+                // TODO: change this image when a different resource id is returned, need helper method
+                // Weather icon
+                Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.art_clear);
+                Rect src = new Rect(0, 0, icon.getWidth(), icon.getHeight());
+                Rect dest = new Rect(0, 0, bounds.width(), bounds.height());
+                canvas.drawBitmap(icon, src, dest, null);
+            }
 
             // Current Time
             mTime.setToNow();
             String text = String.format(Locale.getDefault(), "%d:%02d", mTime.hour, mTime.minute);
             canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
 
-            // TODO: Put offset vars in dimensions xml
             String loTemp = getLowTemp();
-            canvas.drawText(loTemp, 0, 10, mTextPaint);
-            // TODO: Put offset vars in dimensions xml
+            canvas.drawText(loTemp, mLoTempXOffset, mTempYOffset, mTextPaint);
+
             String hiTemp = getHighTemp();
-            canvas.drawText(hiTemp, 5, 15, mTextPaint);
+            canvas.drawText(hiTemp, mHiTempXOffset, mTempYOffset, mTextPaint);
         }
 
         private String getLowTemp() {
